@@ -9,18 +9,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project archive
+      - name: Extract archive and prepare files
         run: |
-          mkdir -p extracted
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
-          unzip -q -o "$ZIP_FILE" -d extracted/
+          mkdir -p /tmp/game_files
+          ZIP_NAME=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          unzip -q -o "$ZIP_NAME" -d /tmp/game_files/
           
-          # Если внутри папка с проектом, вытаскиваем всё в корень
-          if [ -d "extracted/TechEmpireTycoon_project" ]; then
-            cp -r extracted/TechEmpireTycoon_project/* .
+          # Если внутри папка TechEmpireTycoon, переносим всё в корень
+          if [ -d "/tmp/game_files/TechEmpireTycoon" ]; then
+            cp -r /tmp/game_files/TechEmpireTycoon/* .
           else
-            cp -r extracted/* .
+            cp -r /tmp/game_files/* .
           fi
+          rm -rf /tmp/game_files
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -34,18 +35,14 @@ jobs:
           gradle-version: '8.2'
           cache-disabled: true
 
-      - name: Generate wrapper if missing
+      - name: Make gradlew and build
         run: |
-          if [ ! -f "./gradlew" ]; then
-            gradle wrapper --gradle-version 8.2
-          fi
+          gradle wrapper --gradle-version 8.2
           chmod +x gradlew
-
-      - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew clean assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: TechEmpireTycoon-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          path: app/build/outputs/apk/debug/*.apk
