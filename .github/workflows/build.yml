@@ -9,15 +9,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project archive
+      - name: Extract archive
         run: |
           mkdir -p extracted
-          unzip -o TechEmpireTycoon*.zip -d extracted/
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            unzip -q -o "$ZIP_FILE" -d extracted/
+          fi
+          
           if [ -d "extracted/TechEmpireTycoon_project" ]; then
             cp -r extracted/TechEmpireTycoon_project/* .
-          else
+          elif [ -n "$ZIP_FILE" ]; then
             cp -r extracted/* .
           fi
+          
+          chmod +x gradlew || true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -35,4 +41,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TechEmpireTycoon-APK
-          path: "**/build/outputs/apk/debug/*.apk" 
+          path: "**/build/outputs/apk/debug/*.apk"
