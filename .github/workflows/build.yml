@@ -16,13 +16,11 @@ jobs:
           if [ -n "$ZIP_FILE" ]; then
             unzip -q -o "$ZIP_FILE" -d extracted/
           fi
-          
           if [ -d "extracted/TechEmpireTycoon_project" ]; then
             cp -r extracted/TechEmpireTycoon_project/* .
           elif [ -n "$ZIP_FILE" ]; then
             cp -r extracted/* .
           fi
-          
           chmod +x gradlew || true
 
       - name: Set up JDK 17
@@ -33,9 +31,11 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true
 
       - name: Build APK
-        run: gradle clean assembleDebug --no-daemon --stacktrace 
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
