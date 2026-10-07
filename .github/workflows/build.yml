@@ -9,22 +9,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract archive and locate project
+      - name: Extract project archive
         run: |
-          mkdir -p extracted
-          ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
-          if [ -n "$ZIP_FILE" ]; then
-            echo "Unpacking $ZIP_FILE..."
-            unzip -q -o "$ZIP_FILE" -d extracted/
-          fi
-
-          PROJECT_DIR=$(find extracted -name "settings.gradle" -exec dirname {} \; | head -n 1)
-          if [ -z "$PROJECT_DIR" ]; then
-            PROJECT_DIR=$(find extracted -name "build.gradle" -exec dirname {} \; | head -n 1)
-          fi
-
-          echo "Found project directory: $PROJECT_DIR"
-          cp -r $PROJECT_DIR/* .
+          unzip -o *.zip
           chmod +x gradlew || true
 
       - name: Set up JDK 17
@@ -33,19 +20,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.2
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.2'
-          cache-disabled: true
-
-      - name: Build APK
-        run: |
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --no-daemon --stacktrace
-          else
-            gradle assembleDebug --no-daemon --stacktrace
-          fi
+      - name: Build APK with Gradle
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
