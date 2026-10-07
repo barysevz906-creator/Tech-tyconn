@@ -9,18 +9,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract archive
+      - name: Extract archive and locate project
         run: |
           mkdir -p extracted
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          # Ищем любой zip архив в репозитории
+          ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
+            echo "Unpacking $ZIP_FILE..."
             unzip -q -o "$ZIP_FILE" -d extracted/
           fi
-          if [ -d "extracted/TechEmpireTycoon_project" ]; then
-            cp -r extracted/TechEmpireTycoon_project/* .
-          elif [ -n "$ZIP_FILE" ]; then
-            cp -r extracted/* .
+
+          # Ищем папку, в которой реально лежит settings.gradle
+          PROJECT_DIR=$(find extracted -name "settings.gradle" -exec dirname {} \; | head -n 1)
+          
+          if [ -z "$PROJECT_DIR" ]; then
+            # Если settings.gradle нет, ищем по build.gradle
+            PROJECT_DIR=$(find extracted -name "build.gradle" -exec dirname {} \; | head -n 1)
           fi
+
+          echo "Found project directory: $PROJECT_DIR"
+          # Копируем всё из найденной папки в корень
+          cp -r $PROJECT_DIR/* .
           chmod +x gradlew || true
 
       - name: Set up JDK 17
@@ -35,7 +44,12 @@ jobs:
           cache-disabled: true
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew clean assembleDebug --no-daemon --stacktrace
+          else
+            gradle clean assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
