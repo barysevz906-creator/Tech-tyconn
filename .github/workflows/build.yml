@@ -12,23 +12,18 @@ jobs:
       - name: Extract archive and locate project
         run: |
           mkdir -p extracted
-          # Ищем любой zip архив в репозитории
           ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
             echo "Unpacking $ZIP_FILE..."
             unzip -q -o "$ZIP_FILE" -d extracted/
           fi
 
-          # Ищем папку, в которой реально лежит settings.gradle
           PROJECT_DIR=$(find extracted -name "settings.gradle" -exec dirname {} \; | head -n 1)
-          
           if [ -z "$PROJECT_DIR" ]; then
-            # Если settings.gradle нет, ищем по build.gradle
             PROJECT_DIR=$(find extracted -name "build.gradle" -exec dirname {} \; | head -n 1)
           fi
 
           echo "Found project directory: $PROJECT_DIR"
-          # Копируем всё из найденной папки в корень
           cp -r $PROJECT_DIR/* .
           chmod +x gradlew || true
 
@@ -38,17 +33,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle 8.2
         uses: gradle/actions/setup-gradle@v3
         with:
+          gradle-version: '8.2'
           cache-disabled: true
 
       - name: Build APK
         run: |
           if [ -f "./gradlew" ]; then
-            ./gradlew clean assembleDebug --no-daemon --stacktrace
+            ./gradlew assembleDebug --no-daemon --stacktrace
           else
-            gradle clean assembleDebug --no-daemon --stacktrace
+            gradle assembleDebug --no-daemon --stacktrace
           fi
 
       - name: Upload APK
